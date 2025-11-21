@@ -1,0 +1,35 @@
+Some weights of LlamaForSequenceClassification were not initialized from the model checkpoint at TinyLlama/TinyLlama-1.1B-Chat-v1.0 and are newly initialized: ['score.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+PyTorch version: 2.7.1+cu118
+CUDA available: True
+Visible devices: 4
+
+1. Loading model...
+Loading tokenizer: TinyLlama/TinyLlama-1.1B-Chat-v1.0
+Loading base model: TinyLlama/TinyLlama-1.1B-Chat-v1.0
+Applying LoRA with r=8, alpha=16, target_modules=['q_proj', 'k_proj', 'v_proj', 'o_proj', 'gate_proj', 'up_proj', 'down_proj']
+trainable params: 6,318,080 || all params: 1,040,840,704 || trainable%: 0.6070
+✓ Model loaded
+
+2. Loading data...
+Loading Banking77 dataset...
+Preprocessing and indexing by class...
+Loaded 10003 train samples, 3080 test samples
+Classes: 77
+✓ Data loaded
+
+3. Generating test tasks...
+✓ Generated 10 tasks
+
+4. Sampling one episode...
+Support shape: torch.Size([25, 64])
+Query shape: torch.Size([75, 64])
+
+5. Testing forward pass...
+Loss: 5.1212
+
+6. Testing one gradient step...
+Before: 5.1212
+After: 1.2470
+
+✓✓✓ ALL TESTS PASSED ✓✓✓
