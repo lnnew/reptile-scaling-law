@@ -1,5 +1,0 @@
-meta_test_loss,meta_test_accuracy,meta_test_loss_std,meta_test_accuracy_std,step
-,0.20000000298023224,,0.0,500
-,0.20000000298023224,,0.0,1000
-,0.20000000298023224,,0.0,1500
-,0.20000000298023224,,0.0,2000
