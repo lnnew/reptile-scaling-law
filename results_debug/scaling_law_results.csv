@@ -1,2 +1,0 @@
-n_tasks,seed_train,meta_test_loss,meta_test_accuracy,meta_test_loss_std,meta_test_accuracy_std
-50,100,1.706940495967865,0.20733333602547646,0.07170342826265934,0.054564944779098554

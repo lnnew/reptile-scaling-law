@@ -1,9 +1,0 @@
-Traceback (most recent call last):
-  File "/root/ssd/reptile-scaling-law/run_pilot.py", line 11, in <module>
-    from experiment_runner import run_pilot_experiment
-  File "/root/ssd/reptile-scaling-law/experiment_runner.py", line 17, in <module>
-    from llm_model import LLMLoRAClassifier
-  File "/root/ssd/reptile-scaling-law/llm_model.py", line 70
-    model_kwargs["device_map"] = {\"\":device}
-                                   ^
-SyntaxError: unexpected character after line continuation character

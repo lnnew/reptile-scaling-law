@@ -154,7 +154,8 @@ class ScalingLawExperimentRunner:
         self,
         n_tasks: int,
         seed_train: int,
-        shared_test_pool: List
+        shared_test_pool: List,
+        resume_checkpoint: str = None
     ) -> Dict:
         """
         Run one experiment with given N_tasks.
@@ -163,6 +164,7 @@ class ScalingLawExperimentRunner:
             n_tasks: Number of training tasks
             seed_train: Random seed for this experiment
             shared_test_pool: Shared meta-test task pool
+            resume_checkpoint: Path to checkpoint to resume from
             
         Returns:
             Dictionary with experiment results
@@ -220,6 +222,18 @@ class ScalingLawExperimentRunner:
             devices=self.devices
         )
         
+        # Check for existing checkpoints
+        start_step = 1
+        if os.path.exists(save_dir):
+            checkpoint_files = [f for f in os.listdir(save_dir) if f.startswith(f"{experiment_name}_step_") and f.endswith(".pt")]
+            if checkpoint_files:
+                # Sort by step number
+                checkpoint_files.sort(key=lambda x: int(x.split('_step_')[1].split('.pt')[0]))
+                latest_checkpoint = checkpoint_files[-1]
+                checkpoint_path = os.path.join(save_dir, latest_checkpoint)
+                print(f"Found checkpoint: {latest_checkpoint}")
+                start_step = trainer.load_checkpoint(checkpoint_path) + 1
+        
         # Train
         print(f"\nStarting meta-training...")
         trainer.train(
@@ -227,7 +241,8 @@ class ScalingLawExperimentRunner:
             eval_interval=config['eval_interval'],
             num_eval_tasks=config['num_eval_tasks'],
             save_dir=save_dir,
-            experiment_name=experiment_name
+            experiment_name=experiment_name,
+            start_step=start_step
         )
         
         # Final evaluation

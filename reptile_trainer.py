@@ -144,7 +144,7 @@ class ReptileLLMTrainer:
             optimizer.zero_grad()
             
             # Process support in smaller batches to avoid OOM
-            batch_size = min(5, len(support_input_ids))
+            batch_size = min(self.inner_batch_size, len(support_input_ids))
             total_loss = 0
             num_batches = (len(support_input_ids) + batch_size - 1) // batch_size
             

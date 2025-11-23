@@ -1,7 +1,0 @@
-{
-  "meta_test_loss": 1.7271526217460633,
-  "meta_test_accuracy": 0.17866666838526726,
-  "meta_test_loss_std": 0.08002247953316509,
-  "meta_test_accuracy_std": 0.061737795799658865,
-  "step": 50
-}
