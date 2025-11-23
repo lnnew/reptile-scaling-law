@@ -5,7 +5,7 @@ Quick test before full scaling law experiment
 """
 import sys
 import os
-os.environ['CUDA_VISIBLE_DEVICES'] = '4,5,6,7'
+os.environ['CUDA_VISIBLE_DEVICES'] = '0,1,2,3,4,5,6,7'
 sys.path.append('/root/ssd/reptile-scaling-law')
 
 from experiment_runner import run_pilot_experiment
@@ -15,7 +15,7 @@ print("PILOT EXPERIMENT")
 print("="*80)
 print("N_tasks: 100")
 print("Meta-steps: 2000")
-print("GPUs: 4,5,6,7")
+print("GPUs: 0-7")
 print("="*80)
 
 run_pilot_experiment(
@@ -23,7 +23,7 @@ run_pilot_experiment(
     n_tasks=100,
     num_meta_steps=2000,
     save_dir="./pilot_n100",
-    devices=["cuda:0", "cuda:1", "cuda:2", "cuda:3"]  # Maps to actual 4,5,6,7
+    devices=["cuda:0", "cuda:1", "cuda:2", "cuda:3", "cuda:4", "cuda:5", "cuda:6", "cuda:7"]  # All 8 GPUs
 )
 
 print("\n✓ Pilot experiment complete!")

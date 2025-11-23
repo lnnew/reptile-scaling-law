@@ -34,7 +34,8 @@ class LLMLoRAClassifier:
         lora_alpha: int = 32,
         lora_dropout: float = 0.05,
         device: str = "cuda:0",
-        load_in_8bit: bool = False
+        load_in_8bit: bool = False,
+        gradient_checkpointing: bool = True
     ):
         """
         Args:
@@ -45,11 +46,13 @@ class LLMLoRAClassifier:
             lora_dropout: LoRA dropout rate
             device: Device to load model
             load_in_8bit: Whether to use 8-bit quantization
+            gradient_checkpointing: Whether to use gradient checkpointing (saves memory, slows down training)
         """
         self.model_name = model_name
         self.num_labels = num_labels
         self.device = device
         self.load_in_8bit = load_in_8bit
+        self.gradient_checkpointing = gradient_checkpointing
         
         print(f"Loading tokenizer: {model_name}")
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -77,6 +80,23 @@ class LLMLoRAClassifier:
         # Configure pad token
         if self.base_model.config.pad_token_id is None:
             self.base_model.config.pad_token_id = self.tokenizer.pad_token_id
+            
+        # Enable gradient checkpointing to save memory
+        if self.gradient_checkpointing and hasattr(self.base_model, "gradient_checkpointing_enable"):
+            print("Enabling gradient checkpointing...")
+            self.base_model.gradient_checkpointing_enable()
+            # Required for gradient checkpointing with LoRA
+            if hasattr(self.base_model, "enable_input_require_grads"):
+                self.base_model.enable_input_require_grads()
+            else:
+                def make_inputs_require_grad(module, input, output):
+                    output.requires_grad_(True)
+                self.base_model.get_input_embeddings().register_forward_hook(make_inputs_require_grad)
+        
+        # Initialize score weights carefully to prevent NaN
+        if hasattr(self.base_model, "score"):
+            print("Re-initializing score head with small weights...")
+            torch.nn.init.normal_(self.base_model.score.weight, mean=0.0, std=0.01)
         
         # Determine target modules based on model architecture
         target_modules = self._get_target_modules()

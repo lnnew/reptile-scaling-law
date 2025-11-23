@@ -1,0 +1,43 @@
+[
+  {
+    "n_tasks": 100,
+    "seed_train": 100,
+    "final_meta_test_loss": NaN,
+    "final_meta_test_accuracy": 0.20000000298023224,
+    "final_meta_test_loss_std": NaN,
+    "final_meta_test_accuracy_std": 0.0,
+    "k_steps_analysis": {
+      "k_1": {
+        "loss": NaN,
+        "accuracy": 0.20000000298023224,
+        "loss_std": NaN,
+        "accuracy_std": 0.0
+      },
+      "k_3": {
+        "loss": NaN,
+        "accuracy": 0.20000000298023224,
+        "loss_std": NaN,
+        "accuracy_std": 0.0
+      },
+      "k_5": {
+        "loss": NaN,
+        "accuracy": 0.20000000298023224,
+        "loss_std": NaN,
+        "accuracy_std": 0.0
+      },
+      "k_10": {
+        "loss": NaN,
+        "accuracy": 0.20000000298023224,
+        "loss_std": NaN,
+        "accuracy_std": 0.0
+      },
+      "k_20": {
+        "loss": NaN,
+        "accuracy": 0.20000000298023224,
+        "loss_std": NaN,
+        "accuracy_std": 0.0
+      }
+    },
+    "save_dir": "results/ntasks_100_gpu2/ntasks_100_seed_100"
+  }
+]

@@ -1,0 +1,14 @@
+{
+  "zero_shot": {
+    "zero_shot_loss": 2.129228843450546,
+    "zero_shot_accuracy": 0.2009333363175392,
+    "zero_shot_loss_std": 0.0904038026125821,
+    "zero_shot_accuracy_std": 0.021929586793065857
+  },
+  "no_meta_learning": {
+    "baseline_no_meta_loss": 1.6225801420211792,
+    "baseline_no_meta_accuracy": 0.31773333847522733,
+    "baseline_no_meta_loss_std": 0.08432947343596928,
+    "baseline_no_meta_accuracy_std": 0.07968951045921575
+  }
+}

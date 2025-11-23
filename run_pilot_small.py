@@ -3,7 +3,7 @@
 Small pilot experiment: N_tasks=50, 1000 steps
 """
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "4,5,6,7"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3,4,5,6,7"
 
 import sys
 sys.path.append('/root/ssd/reptile-scaling-law')
@@ -31,16 +31,16 @@ for i in range(torch.cuda.device_count()):
     torch.cuda.set_device(i)
     torch.cuda.empty_cache()
 
-# Initialize model with memory optimization
+# Initialize model with memory optimization for 10GB VRAM
 print("\nLoading model...")
 model_wrapper = LLMLoRAClassifier(
     model_name="TinyLlama/TinyLlama-1.1B-Chat-v1.0",
     num_labels=5,
-    lora_r=8,  # Reduced rank
-    lora_alpha=16,  # Reduced alpha
+    lora_r=4,  # Reduced rank for 10GB VRAM
+    lora_alpha=8,  # Reduced alpha for 10GB VRAM
     lora_dropout=0.05,
     device="cuda:0",
-    load_in_8bit=False
+    load_in_8bit=True  # Enable 8-bit for memory efficiency
 )
 
 # Clear cache after model loading
@@ -72,9 +72,9 @@ trainer = ReptileLLMTrainer(
     inner_lr=5e-4,
     meta_lr=0.1,
     k_inner=5,
-    meta_batch_size=2,  # Reduced for memory
-    inner_batch_size=25,
-    devices=["cuda:0", "cuda:1", "cuda:2", "cuda:3"]  # Map to actual 4,5,6,7
+    meta_batch_size=1,  # Reduced for 10GB VRAM
+    inner_batch_size=15,  # Reduced for 10GB VRAM
+    devices=["cuda:0", "cuda:1", "cuda:2", "cuda:3", "cuda:4", "cuda:5", "cuda:6", "cuda:7"]  # All GPUs
 )
 
 # Train

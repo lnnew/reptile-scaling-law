@@ -1,0 +1,7 @@
+nohup: ignoring input
+Traceback (most recent call last):
+  File "/home/jihyun/reptile-scaling-law/test_pilot.py", line 8, in <module>
+    from experiment_runner import ScalingLawExperimentRunner
+  File "/home/jihyun/reptile-scaling-law/experiment_runner.py", line 14, in <module>
+    import matplotlib.pyplot as plt
+ModuleNotFoundError: No module named 'matplotlib'

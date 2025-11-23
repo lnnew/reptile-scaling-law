@@ -1,0 +1,7 @@
+{
+  "meta_test_loss": NaN,
+  "meta_test_accuracy": 0.20000000298023224,
+  "meta_test_loss_std": NaN,
+  "meta_test_accuracy_std": 0.0,
+  "step": 2000
+}

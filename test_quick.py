@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Quick test script to verify all components work on GPUs 4,5,6,7
+Quick test script to verify all components work on GPUs 0-7
 """
 import sys
 sys.path.append('/root/ssd/reptile-scaling-law')
@@ -8,11 +8,11 @@ sys.path.append('/root/ssd/reptile-scaling-law')
 import torch
 import os
 
-# Set environment to use only GPUs 4,5,6,7
-os.environ['CUDA_VISIBLE_DEVICES'] = '4,5,6,7'
+# Set environment to use all GPUs 0-7
+os.environ['CUDA_VISIBLE_DEVICES'] = '0,1,2,3,4,5,6,7'
 
 print("="*60)
-print("QUICK TEST: Banking77 + Reptile on GPUs 4,5,6,7")
+print("QUICK TEST: Banking77 + Reptile on GPUs 0-7")
 print("="*60)
 
 # Test 1: Import modules

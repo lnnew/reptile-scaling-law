@@ -5,6 +5,7 @@ Implements efficient multi-GPU training with proper meta-updates.
 """
 
 import os
+import sys
 import json
 import time
 import torch
@@ -16,6 +17,8 @@ from typing import Dict, List, Tuple, Optional
 import numpy as np
 from tqdm import tqdm
 import pandas as pd
+from concurrent.futures import ThreadPoolExecutor
+import threading
 
 from llm_model import (
     LLMLoRAClassifier,
@@ -45,7 +48,7 @@ class ReptileLLMTrainer:
         inner_batch_size: int = 25,  # support+query per task
         weight_decay: float = 0.01,
         use_amp: bool = True,
-        devices: List[str] = ["cuda:4", "cuda:5", "cuda:6", "cuda:7"]
+        devices: List[str] = ["cuda:0", "cuda:1", "cuda:2", "cuda:3", "cuda:4", "cuda:5", "cuda:6", "cuda:7"]
     ):
         """
         Args:
@@ -172,6 +175,12 @@ class ReptileLLMTrainer:
                 loss.backward()
                 total_loss += loss.item() * num_batches
             
+            # Gradient clipping to prevent NaN
+            torch.nn.utils.clip_grad_norm_(
+                self.model_wrapper.get_trainable_params(),
+                max_norm=1.0
+            )
+            
             optimizer.step()
             final_train_loss = total_loss
         
@@ -205,31 +214,28 @@ class ReptileLLMTrainer:
         # Sample meta-batch of tasks
         task_batch = self.train_batch_sampler.sample_batch(self.meta_batch_size)
         
-        # Distribute tasks across GPUs
-        tasks_per_gpu = self._distribute_tasks(task_batch, self.devices)
-        
-        # Run inner loops in parallel (or sequentially if needed)
+        # Process all tasks on primary GPU (simplified single-GPU mode)
         adapted_states = []
         train_losses = []
         query_losses = []
+        device = self.devices[0]  # Use only first GPU
         
-        for device, device_tasks in tasks_per_gpu.items():
-            for task_data in device_tasks:
-                support_enc, query_enc, support_labels, query_labels = task_data
-                
-                # Reset to theta_old before each task
-                load_model_state(self.model_wrapper, theta_old)
-                
-                # Run inner loop
-                adapted_state, train_loss, query_loss = self._inner_loop(
-                    support_enc, support_labels,
-                    query_enc, query_labels,
-                    device
-                )
-                
-                adapted_states.append(adapted_state)
-                train_losses.append(train_loss)
-                query_losses.append(query_loss)
+        for task_data in task_batch:
+            support_enc, query_enc, support_labels, query_labels = task_data
+            
+            # Reset to theta_old before each task
+            load_model_state(self.model_wrapper, theta_old)
+            
+            # Run inner loop
+            adapted_state, train_loss, query_loss = self._inner_loop(
+                support_enc, support_labels,
+                query_enc, query_labels,
+                device
+            )
+            
+            adapted_states.append(adapted_state)
+            train_losses.append(train_loss)
+            query_losses.append(query_loss)
         
         # Reptile meta-update: average adapted states
         avg_adapted_state = average_states(adapted_states)
@@ -370,7 +376,8 @@ class ReptileLLMTrainer:
         eval_interval: int = 500,
         num_eval_tasks: int = 100,
         save_dir: str = "./checkpoints",
-        experiment_name: str = "reptile_experiment"
+        experiment_name: str = "reptile_experiment",
+        start_step: int = 1
     ):
         """
         Main training loop.
@@ -381,20 +388,41 @@ class ReptileLLMTrainer:
             num_eval_tasks: Number of test tasks for evaluation
             save_dir: Directory to save checkpoints and logs
             experiment_name: Name for this experiment
+            start_step: Step to start from (default: 1)
         """
         os.makedirs(save_dir, exist_ok=True)
         
         print(f"\n{'='*60}")
         print(f"Starting Meta-Training: {experiment_name}")
         print(f"Total meta-steps: {num_meta_steps}")
+        print(f"Start step: {start_step}")
         print(f"Eval interval: {eval_interval}")
         print(f"{'='*60}\n")
         
-        for step in tqdm(range(1, num_meta_steps + 1), desc="Meta-training"):
+        for step in tqdm(range(start_step, num_meta_steps + 1), desc="Meta-training"):
             # Meta-training step
             train_stats = self.meta_train_step()
+            
+            # Check for NaN
+            if np.isnan(train_stats['meta_train_loss']) or np.isnan(train_stats['meta_query_loss']):
+                msg = f"\n[ERROR] NaN loss detected at step {step}! Train Loss: {train_stats['meta_train_loss']}, Query Loss: {train_stats['meta_query_loss']}"
+                tqdm.write(msg)
+                sys.stdout.flush()
+                raise ValueError(msg)
+            
+            # Evaluation
             train_stats['step'] = step
             self.train_stats.append(train_stats)
+            
+            # Verbose logging every step
+            log_msg = f"Step {step}: Train Loss={train_stats['meta_train_loss']:.4f}, Query Loss={train_stats['meta_query_loss']:.4f}"
+            tqdm.write(log_msg)
+            sys.stdout.flush()
+            
+            # Save checkpoint every 1000 steps
+            if step % 1000 == 0:
+                tqdm.write(f"\nSaving checkpoint at step {step}...")
+                self._save_checkpoint(save_dir, experiment_name, step)
             
             # Evaluation
             if step % eval_interval == 0 or step == num_meta_steps:
@@ -403,14 +431,16 @@ class ReptileLLMTrainer:
                 self.eval_stats.append(eval_stats)
                 
                 # Print progress
-                print(f"\nStep {step}/{num_meta_steps}:")
-                print(f"  Train - Support Loss: {train_stats['meta_train_loss']:.4f}, "
+                tqdm.write(f"\nStep {step}/{num_meta_steps}:")
+                tqdm.write(f"  Train - Support Loss: {train_stats['meta_train_loss']:.4f}, "
                       f"Query Loss: {train_stats['meta_query_loss']:.4f}")
-                print(f"  Test  - Query Loss: {eval_stats['meta_test_loss']:.4f}, "
+                tqdm.write(f"  Test  - Query Loss: {eval_stats['meta_test_loss']:.4f}, "
                       f"Accuracy: {eval_stats['meta_test_accuracy']:.4f}")
+                sys.stdout.flush()
                 
-                # Save checkpoint
-                self._save_checkpoint(save_dir, experiment_name, step)
+                # Save checkpoint (if not already saved by 1000 step rule)
+                if step % 1000 != 0:
+                    self._save_checkpoint(save_dir, experiment_name, step)
         
         print(f"\n{'='*60}")
         print("Meta-Training Complete!")
@@ -445,3 +475,28 @@ class ReptileLLMTrainer:
         final_eval = self.eval_stats[-1] if self.eval_stats else {}
         with open(os.path.join(save_dir, f"{experiment_name}_final_results.json"), 'w') as f:
             json.dump(final_eval, f, indent=2)
+    
+    def load_checkpoint(self, checkpoint_path: str):
+        """
+        Load model checkpoint and stats.
+        
+        Args:
+            checkpoint_path: Path to checkpoint file
+            
+        Returns:
+            step: The step number of the checkpoint
+        """
+        print(f"Loading checkpoint from {checkpoint_path}...")
+        checkpoint = torch.load(checkpoint_path, map_location=self.devices[0])
+        
+        # Load model state
+        self.model_wrapper.set_state_dict(checkpoint['model_state'])
+        
+        # Load stats
+        self.train_stats = checkpoint.get('train_stats', [])
+        self.eval_stats = checkpoint.get('eval_stats', [])
+        
+        step = checkpoint.get('step', 0)
+        print(f"Resumed from step {step}")
+        
+        return step
